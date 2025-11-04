@@ -3,7 +3,7 @@ import sqlite3
 # 1 - Conectando ao banco de dados
 conexao = sqlite3.connect('titulo.db')
 
-# 2 - Criando a tabela
+# 2 - Obtendo o cursor
 cursor = conexao.cursor() # Obtendo o cursor para executar comandos SQL
 
 # 3 - Criando a tabela
