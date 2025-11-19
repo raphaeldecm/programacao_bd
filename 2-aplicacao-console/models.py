@@ -2,17 +2,17 @@ import sqlite3
 
 class Database:
 
-  def __init__(self, db_name="filmes.db"):
+  def __init__(self, db_name="filmes.db", table_name="filmes"):
       self.db_name = db_name
       self.connection = sqlite3.connect(db_name)
       self.cursor = self.connection.cursor()
-      self.create_table()
+      self.create_table(table_name)
   
-  def create_table(self):
+  def create_table(self, table_name="filmes"):
       """Cria a tabela de filmes se não existir."""
       try:
-        self.cursor.execute("""
-          CREATE TABLE IF NOT EXISTS filmes (
+        self.cursor.execute(f"""
+          CREATE TABLE IF NOT EXISTS {table_name} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             ano INTEGER NOT NULL,
