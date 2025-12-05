@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLAlchemy ORM em Python</title>
+    <style>
+        /* Theme Variables */
+        :root {
+            --font-family-display: Arial, sans-serif;
+            --font-weight-display: 600;
+            --font-family-content: Arial, sans-serif;
+            --font-weight-content: 400;
+            --font-size-content: 16px;
+            --line-height-content: 1.4;
+        }
+
+        /* DARK THEME */
+        body.theme-dark {
+            --color-bg-base: #0f172a;
+            --color-bg-elevated: #020617;
+            --color-bg-surface: #1e293b;
+            --color-bg-muted: #334155;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-text-muted: #94a3b8;
+            --color-text-accent: #38bdf8;
+            --color-primary: #38bdf8;
+            --color-primary-foreground: #0f172a;
+        }
+
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family-content);
+            font-weight: var(--font-weight-content);
+            font-size: var(--font-size-content);
+            line-height: var(--line-height-content);
+            overflow-x: hidden;
+        }
+
+        /* Slide Container */
+        .slide {
+            width: 960px;
+            height: 540px;
+            margin: 0 auto 20px;
+            display: flex;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Layout Utilities */
+        .row { flex-direction: row; }
+        .col { flex-direction: column; }
+        .center {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .space-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .items-end { align-items: flex-end; }
+        .fill-width { flex: 1; }
+        .fill-height { flex: 1; display: flex; flex-direction: column; }
+
+        /* Spacing */
+        .gap-sm { gap: 0.5rem; }
+        .gap-md { gap: 1rem; }
+        .gap-lg { gap: 1.5rem; }
+        .gap-xl { gap: 2rem; }
+        .gap-2xl { gap: 3rem; }
+
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .p-12 { padding: 3rem; }
+        .p-16 { padding: 4rem; }
+
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-12 { margin-bottom: 3rem; }
+
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .mt-12 { margin-top: 3rem; }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-family-display);
+            font-weight: var(--font-weight-display);
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        h1 { font-size: 3rem; }
+        h2 { font-size: 2.25rem; }
+        h3 { font-size: 1.75rem; }
+        h4 { font-size: 1.5rem; }
+        h5 { font-size: 1.25rem; }
+        h6 { font-size: 1rem; }
+
+        .text-6xl { font-size: 3.75rem; }
+        .text-5xl { font-size: 3rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-base { font-size: 1rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+        .font-normal { font-weight: 400; }
+
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+
+        .opacity-90 { opacity: 0.9; }
+        .opacity-80 { opacity: 0.8; }
+        .opacity-70 { opacity: 0.7; }
+        .opacity-60 { opacity: 0.6; }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 2rem;
+            line-height: 1.8;
+        }
+
+        ul li { list-style: disc; }
+        ol li { list-style: decimal; }
+
+        li { margin-bottom: 0.75rem; }
+        li:last-child { margin-bottom: 0; }
+
+        /* Code Blocks */
+        code {
+            background-color: #1e293b;
+            color: #38bdf8;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Card Styles */
+        .card-rect {
+            padding: 2rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <!-- Slide 1: Título -->
+    <section class="slide p-16 col center" style="background-color: #020617; color: #f1f5f9;">
+        <h1 class="text-6xl mb-4" style="color: #38bdf8;">SQLAlchemy ORM</h1>
+        <p class="text-2xl mb-6" style="color: #cbd5e1;">Programação com Banco de Dados em Python</p>
+        <p class="text-lg" style="color: #94a3b8;">Curso Técnico • Desenvolvimento de Sistemas</p>
+    </section>
+
+    <!-- Slide 2: O que é ORM? -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">O que é ORM?</h2>
+        <div class="fill-height">
+            <ul class="text-lg" style="color: #cbd5e1;">
+                <li><strong>ORM</strong> = Object-Relational Mapping</li>
+                <li>Mapeia tabelas de banco de dados para classes Python</li>
+                <li>Trabalha com objetos ao invés de SQL direto</li>
+                <li>Aumenta produtividade e segurança</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Slide 3: Por que usar ORM? -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-8" style="color: #38bdf8;">Vantagens da ORM</h2>
+        <div class="fill-height row gap-lg">
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">✓ Produtividade</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Escreva código Python ao invés de SQL</p>
+            </div>
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">✓ Segurança</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Proteção contra SQL Injection</p>
+            </div>
+        </div>
+        <div class="row gap-lg mt-4">
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">✓ Portabilidade</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Mude de banco facilmente</p>
+            </div>
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">✓ Manutenção</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Código mais organizado</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: SQLAlchemy - Core vs ORM -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">SQLAlchemy: Duas Camadas</h2>
+        <div class="fill-height row gap-lg">
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #7c3aed;">Core</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Baixo nível, próximo ao SQL</p>
+                <p style="color: #94a3b8; font-size: 0.85rem;">Consultas complexas</p>
+            </div>
+            <div class="fill-width" style="background-color: #1e293b; color: #f1f5f9; padding: 1.5rem; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #38bdf8;">ORM</h4>
+                <p style="color: #cbd5e1; font-size: 0.95rem;">Orientado a objetos</p>
+                <p style="color: #94a3b8; font-size: 0.85rem;"><strong>FOCO DESTE CURSO</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Instalação e Setup -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">Instalação</h2>
+        <p class="text-lg mb-4" style="color: #cbd5e1;">Execute no terminal:</p>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            <code style="color: #4ade80; font-size: 1rem;">pip install sqlalchemy</code>
+        </div>
+        <p class="text-base" style="color: #94a3b8;">Apenas um comando para começar!</p>
+    </section>
+
+    <!-- Slide 6: Estrutura do Projeto -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">Organização do Projeto</h2>
+        <div style="background-color: #1e293b; padding: 1.5rem; border-radius: 4px; color: #cbd5e1; font-size: 0.95rem; line-height: 1.8;">
+            <p><code style="color: #f1f5f9;">database.py</code> ← Conexão com banco</p>
+            <p><code style="color: #f1f5f9;">models.py</code> ← Definição das tabelas</p>
+            <p><code style="color: #f1f5f9;">crud.py</code> ← Operações CRUD</p>
+            <p><code style="color: #f1f5f9;">main.py</code> ← Arquivo principal</p>
+        </div>
+    </section>
+
+    <!-- Slide 7: Database.py -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Arquivo database.py</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.8rem; line-height: 1.5; overflow-y: auto; max-height: 280px;">
+            <code style="color: #cbd5e1; display: block;">from sqlalchemy import create_engine<br/>from sqlalchemy.ext.declarative import declarative_base<br/>from sqlalchemy.orm import sessionmaker<br/><br/><span style="color: #7c3aed;">engine</span> = create_engine('sqlite:///meu_banco.db', echo=True)<br/><br/><span style="color: #7c3aed;">Base</span> = declarative_base()<br/><br/><span style="color: #7c3aed;">SessionLocal</span> = sessionmaker(bind=engine)</code>
+        </div>
+    </section>
+
+    <!-- Slide 8: Modelos - Classe Produto -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Definindo Modelos</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.4;">
+            <code style="color: #cbd5e1; display: block;">class Produto(Base):<br/>    __tablename__ = 'produtos'<br/>    <br/>    id = Column(Integer, primary_key=True)<br/>    nome = Column(String(100), nullable=False)<br/>    preco = Column(Float, nullable=False)</code>
+        </div>
+        <p class="text-sm mt-4" style="color: #94a3b8;">Cada classe = Uma tabela no banco</p>
+    </section>
+
+    <!-- Slide 9: Tipos de Dados -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Principais Tipos de Dados</h2>
+        <div style="font-size: 0.85rem; line-height: 1.8; color: #cbd5e1;">
+            <p><span style="color: #38bdf8;">Integer</span> → Números inteiros</p>
+            <p><span style="color: #38bdf8;">String(n)</span> → Texto com tamanho máximo</p>
+            <p><span style="color: #38bdf8;">Float</span> → Números decimais</p>
+            <p><span style="color: #38bdf8;">Boolean</span> → Verdadeiro/Falso</p>
+            <p><span style="color: #38bdf8;">DateTime</span> → Data e hora</p>
+        </div>
+    </section>
+
+    <!-- Slide 10: Constraints -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Constraints (Restrições)</h2>
+        <ul class="text-sm" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li><code>primary_key=True</code> → Chave primária</li>
+            <li><code>unique=True</code> → Valor único</li>
+            <li><code>nullable=False</code> → Campo obrigatório</li>
+            <li><code>default=valor</code> → Valor padrão</li>
+            <li><code>autoincrement=True</code> → Auto-incremente</li>
+        </ul>
+    </section>
+
+    <!-- Slide 11: Criando Banco -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Criando as Tabelas</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.8rem; line-height: 1.6;">
+            <code style="color: #cbd5e1; display: block;">from database import engine, Base<br/>from models import Produto<br/><br/><span style="color: #4ade80;">Base.metadata.create_all(engine)</span><br/>print("Tabelas criadas!")</code>
+        </div>
+    </section>
+
+    <!-- Slide 12: Session -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Session - Comunicação com Banco</h2>
+        <p class="text-sm mb-4" style="color: #cbd5e1;">A Session é a "conversa" entre seu código e o banco</p>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.5;">
+            <code style="color: #cbd5e1; display: block;">session = SessionLocal()<br/><br/><span style="color: #7c3aed;"># Fazer operações</span><br/><br/>session.commit()  <span style="color: #7c3aed;"># Confirmar</span><br/>session.close()   <span style="color: #7c3aed;"># Fechar</span></code>
+        </div>
+    </section>
+
+    <!-- Slide 13: CRUD - CREATE -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">CRUD - CREATE (Inserir)</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.4;">
+            <code style="color: #cbd5e1; display: block;">produto = Produto(nome="Notebook", preco=2500.00)<br/><br/>session.add(produto)<br/>session.commit()</code>
+        </div>
+    </section>
+
+    <!-- Slide 14: CRUD - READ -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">CRUD - READ (Consultar)</h2>
+        <div style="font-size: 0.8rem; line-height: 1.6; color: #cbd5e1;">
+            <p><code>session.query(Produto).all()</code> → Todos</p>
+            <p><code>session.query(Produto).get(1)</code> → Por ID</p>
+            <p><code>session.query(Produto).filter(...).first()</code> → Com filtro</p>
+            <p><code>session.query(Produto).count()</code> → Contar</p>
+        </div>
+    </section>
+
+    <!-- Slide 15: CRUD - UPDATE -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">CRUD - UPDATE (Atualizar)</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.4;">
+            <code style="color: #cbd5e1; display: block;">produto = session.query(Produto).get(1)<br/>produto.preco = 2300.00<br/><br/>session.commit()</code>
+        </div>
+    </section>
+
+    <!-- Slide 16: CRUD - DELETE -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">CRUD - DELETE (Remover)</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.4;">
+            <code style="color: #cbd5e1; display: block;">produto = session.query(Produto).get(2)<br/><br/>session.delete(produto)<br/>session.commit()</code>
+        </div>
+    </section>
+
+    <!-- Slide 17: Relacionamentos - One-to-Many -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Relacionamentos: One-to-Many</h2>
+        <p class="text-sm mb-3" style="color: #cbd5e1;">Um Cliente → Várias Compras</p>
+        <div style="background-color: #1e293b; padding: 1rem; border-radius: 4px; font-size: 0.7rem; line-height: 1.4; color: #cbd5e1; max-height: 200px; overflow-y: auto;">
+            <code style="display: block;">class Cliente(Base):<br/>    __tablename__ = 'clientes'<br/>    id = Column(Integer, primary_key=True)<br/>    compras = relationship("Compra")<br/><br/>class Compra(Base):<br/>    __tablename__ = 'compras'<br/>    cliente_id = Column(Integer, ForeignKey('clientes.id'))</code>
+        </div>
+    </section>
+
+    <!-- Slide 18: Relacionamentos - Many-to-Many -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">Relacionamentos: Many-to-Many</h2>
+        <p class="text-sm mb-3" style="color: #cbd5e1;">Alunos ↔ Disciplinas (tabela intermediária)</p>
+        <div style="background-color: #1e293b; padding: 1rem; border-radius: 4px; font-size: 0.65rem; line-height: 1.3; color: #cbd5e1;">
+            <code style="display: block;">aluno_disciplina = Table('aluno_disciplina', Base.metadata,<br/>    Column('aluno_id', Integer, ForeignKey('alunos.id')),<br/>    Column('disciplina_id', Integer, ForeignKey('disciplinas.id'))<br/>)</code>
+        </div>
+    </section>
+
+    <!-- Slide 19: Boas Práticas - Organização -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">✓ Boa Prática: Organização</h2>
+        <ul class="text-sm" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>Separe em arquivos: models, crud, database</li>
+            <li>Use pastas para grandes projetos</li>
+            <li>Um modelo por arquivo (opcional)</li>
+            <li>Importações organizadas</li>
+        </ul>
+    </section>
+
+    <!-- Slide 20: Boas Práticas - Session -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">✓ Boa Prática: Session</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.7rem; line-height: 1.4;">
+            <code style="color: #cbd5e1; display: block;">session = SessionLocal()<br/>try:<br/>    <span style="color: #7c3aed;"># suas operações</span><br/>except Exception as e:<br/>    session.rollback()<br/>finally:<br/>    session.close()</code>
+        </div>
+    </section>
+
+    <!-- Slide 21: Boas Práticas - Validação -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">✓ Boa Prática: Validação</h2>
+        <div style="background-color: #020617; padding: 1rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.5;">
+            <code style="color: #cbd5e1; display: block;">def criar_produto(nome, preco):<br/>    if not nome or preco &lt;= 0:<br/>        raise ValueError("Inválido!")</code>
+        </div>
+        <p class="text-xs mt-3" style="color: #94a3b8;">Sempre valide dados antes de inserir</p>
+    </section>
+
+    <!-- Slide 22: Exercício 1 -->
+    <section class="slide p-16 col center" style="background-color: #1e293b; color: #f1f5f9;">
+        <h2 class="mb-8" style="color: #38bdf8;">Exercício 1</h2>
+        <p class="text-lg mb-4" style="color: #cbd5e1;">Crie um modelo <code>Aluno</code> com:</p>
+        <ul class="text-base" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>id (chave primária)</li>
+            <li>nome (obrigatório)</li>
+            <li>matrícula (única)</li>
+            <li>nota (float)</li>
+            <li>aprovado (boolean)</li>
+        </ul>
+    </section>
+
+    <!-- Slide 23: Exercício 2 -->
+    <section class="slide p-16 col center" style="background-color: #1e293b; color: #f1f5f9;">
+        <h2 class="mb-8" style="color: #38bdf8;">Exercício 2</h2>
+        <p class="text-base mb-4" style="color: #cbd5e1;">Usando o modelo Produto:</p>
+        <ol class="text-base" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>Insira 3 produtos</li>
+            <li>Consulte todos</li>
+            <li>Atualize um preço</li>
+            <li>Delete um produto</li>
+        </ol>
+    </section>
+
+    <!-- Slide 24: Exercício 3 -->
+    <section class="slide p-16 col center" style="background-color: #1e293b; color: #f1f5f9;">
+        <h2 class="mb-8" style="color: #38bdf8;">Exercício 3</h2>
+        <p class="text-base mb-4" style="color: #cbd5e1;">Crie relacionamento One-to-Many:</p>
+        <p class="text-base" style="color: #cbd5e1; margin-left: 1.5rem;">Autor → Livros</p>
+        <p class="text-sm mt-4" style="color: #94a3b8;">Insira 1 autor com 2 livros</p>
+    </section>
+
+    <!-- Slide 25: Desafio Final -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-4" style="color: #38bdf8;">🏆 Desafio Final: Sistema de Biblioteca</h2>
+        <ul class="text-sm" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>Modelos: Categoria, Livro, Empréstimo</li>
+            <li>Relacionamentos: 1→N para ambos</li>
+            <li>Funcionalidades: CRUD completo</li>
+            <li>Registrar empréstimos e devoluções</li>
+        </ul>
+    </section>
+
+    <!-- Slide 26: Resumo -->
+    <section class="slide p-16 col" style="background-color: #0f172a; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">O que aprendemos</h2>
+        <ul class="text-base" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>O que é ORM e por que usar</li>
+            <li>Estrutura de um projeto SQLAlchemy</li>
+            <li>Modelos, tipos de dados e constraints</li>
+            <li>Operações CRUD completas</li>
+            <li>Relacionamentos (One-to-Many, Many-to-Many)</li>
+            <li>Boas práticas de desenvolvimento</li>
+        </ul>
+    </section>
+
+    <!-- Slide 27: Próximos Passos -->
+    <section class="slide p-16 col center" style="background-color: #020617; color: #f1f5f9;">
+        <h2 class="mb-6" style="color: #38bdf8;">Próximos Passos</h2>
+        <ul class="text-lg" style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li>Pratique com seus próprios projetos</li>
+            <li>Explore consultas mais complexas</li>
+            <li>Integre com frameworks como Flask</li>
+        </ul>
+    </section>
+
+    <!-- Slide 28: Encerramento -->
+    <section class="slide p-16 col center" style="background-color: #020617; color: #f1f5f9;">
+        <h1 class="text-5xl mb-6" style="color: #38bdf8;">Obrigado!</h1>
+        <p class="text-xl mb-8" style="color: #cbd5e1;">Dúvidas?</p>
+        <p class="text-base" style="color: #94a3b8;">SQLAlchemy Docs: docs.sqlalchemy.org</p>
+    </section>
+
+</body>
+</html>
