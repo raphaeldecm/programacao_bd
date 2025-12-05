@@ -1,4 +1,4 @@
-# Comparação: SQL Puro vs SQLAlchemy ORM
+# Comparação: SQL Puro vs Peewee ORM
 
 ## 📊 Visão Geral
 
@@ -29,35 +29,31 @@ cursor.execute("""
 connection.commit()
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
-from sqlalchemy import create_engine, Column, Integer, String, Float
-from sqlalchemy.orm import sessionmaker, declarative_base
+from peewee import SqliteDatabase, Model, AutoField, CharField, IntegerField, FloatField
 
 # Configuração
-engine = create_engine('sqlite:///filmes.db', 
-                      connect_args={"check_same_thread": False})
-Base = declarative_base()
-SessionLocal = sessionmaker(bind=engine)
+db = SqliteDatabase('filmes.db')
 
 # Definir modelo
-class Filme(Base):
-    __tablename__ = 'filmes'
+class Filme(Model):
+    id = AutoField(primary_key=True)
+    nome = CharField(null=False)
+    ano = IntegerField(null=False)
+    nota = FloatField(null=False)
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nome = Column(String, nullable=False)
-    ano = Column(Integer, nullable=False)
-    nota = Column(Float, nullable=False)
+    class Meta:
+        database = db
+        table_name = 'filmes'
 
 # Criar tabelas
-Base.metadata.create_all(bind=engine)
-
-# Obter sessão
-session = SessionLocal()
+db.connect()
+db.create_tables([Filme], safe=True)
 ```
 
-**Vantagem SQLAlchemy:** Configuração mais verbosa inicialmente, mas muito mais poderosa e organizada.
+**Vantagem Peewee:** Definição declarativa mais limpa e orientada a objetos.
 
 ---
 
@@ -82,32 +78,26 @@ def criar_filme(nome, ano, nota):
 criar_filme("Inception", 2010, 9.5)
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
-def criar_filme(session, nome, ano, nota):
+def criar_filme(nome, ano, nota):
     try:
-        filme = Filme(nome=nome, ano=ano, nota=nota)
-        session.add(filme)
-        session.commit()
-        session.refresh(filme)  # Para obter o ID gerado
+        filme = Filme.create(nome=nome, ano=ano, nota=nota)
         return filme
     except Exception as e:
-        session.rollback()
         print(f"Erro: {e}")
         return None
 
 # Usar
-session = SessionLocal()
-filme = criar_filme(session, "Inception", 2010, 9.5)
+filme = criar_filme("Inception", 2010, 9.5)
 print(f"ID gerado: {filme.id}")  # Acesso direto ao ID
-session.close()
 ```
 
-**Vantagem SQLAlchemy:** 
-- Retorna objeto com ID automaticamente
-- Trabalhamos com objetos Python ao invés de tuplas
-- Rollback automático em caso de erro
+**Vantagem Peewee:**
+- Uma linha de código ao invés de três (create, commit)
+- Retorna objeto completo com ID
+- Mais intuitivo e Pythônico
 
 ---
 
@@ -132,29 +122,26 @@ for filme in filmes:
     # Índices numéricos - difícil de ler!
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
 # Listar todos
-def listar_filmes(session):
-    filmes = session.query(Filme)\
-        .order_by(Filme.ano.desc())\
-        .all()
-    return filmes
+def listar_filmes():
+    filmes = Filme.select().order_by(Filme.ano.desc())
+    return list(filmes)
 
 # Usar
-session = SessionLocal()
-filmes = listar_filmes(session)
+filmes = listar_filmes()
 for filme in filmes:
     print(f"{filme.id} - {filme.nome} ({filme.ano}) - {filme.nota}")
     # Atributos nomeados - muito mais legível!
-session.close()
 ```
 
-**Vantagem SQLAlchemy:** 
+**Vantagem Peewee:**
 - Acesso a atributos por nome (filme.nome vs filme[1])
 - Autocomplete do editor funciona
 - Menos erros de índice
+- Código auto-documentado
 
 ---
 
@@ -191,49 +178,49 @@ def filtrar_por_ano(ano_min, ano_max):
     return cursor.fetchall()
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
+from peewee import DoesNotExist
+
 # Buscar por ID
-def buscar_por_id(session, filme_id):
-    return session.query(Filme)\
-        .filter(Filme.id == filme_id)\
-        .first()
+def buscar_por_id(filme_id):
+    try:
+        return Filme.get_by_id(filme_id)
+    except DoesNotExist:
+        return None
 
 # Buscar por nome (parcial)
-def buscar_por_nome(session, nome):
-    return session.query(Filme)\
-        .filter(Filme.nome.ilike(f"%{nome}%"))\
-        .all()
+def buscar_por_nome(nome):
+    return list(Filme.select().where(
+        Filme.nome.contains(nome)
+    ))
 
 # Filtrar por ano
-def filtrar_por_ano(session, ano_min, ano_max):
-    return session.query(Filme)\
-        .filter(Filme.ano >= ano_min)\
-        .filter(Filme.ano <= ano_max)\
-        .all()
+def filtrar_por_ano(ano_min, ano_max):
+    return list(Filme.select().where(
+        (Filme.ano >= ano_min) & (Filme.ano <= ano_max)
+    ))
 
-# Ou com múltiplos filtros:
-from sqlalchemy import and_
-
-def filtrar_avancado(session, nome=None, ano_min=None, nota_min=None):
-    query = session.query(Filme)
+# Filtros dinâmicos
+def buscar_avancado(nome=None, ano_min=None, nota_min=None):
+    query = Filme.select()
     
     if nome:
-        query = query.filter(Filme.nome.ilike(f"%{nome}%"))
+        query = query.where(Filme.nome.contains(nome))
     if ano_min:
-        query = query.filter(Filme.ano >= ano_min)
+        query = query.where(Filme.ano >= ano_min)
     if nota_min:
-        query = query.filter(Filme.nota >= nota_min)
+        query = query.where(Filme.nota >= nota_min)
     
-    return query.all()
+    return list(query)
 ```
 
-**Vantagem SQLAlchemy:** 
-- Queries podem ser construídas dinamicamente
-- Métodos encadeáveis
+**Vantagem Peewee:**
+- Queries construídas dinamicamente
+- Métodos encadeáveis (.where().order_by().limit())
 - Proteção contra SQL injection automática
-- Código mais legível
+- Exceção específica (DoesNotExist) para busca por ID
 
 ---
 
@@ -266,17 +253,12 @@ def atualizar_filme(filme_id, nome=None, ano=None, nota=None):
         return False
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
-def atualizar_filme(session, filme_id, nome=None, ano=None, nota=None):
+def atualizar_filme(filme_id, nome=None, ano=None, nota=None):
     try:
-        filme = session.query(Filme)\
-            .filter(Filme.id == filme_id)\
-            .first()
-        
-        if not filme:
-            return False
+        filme = Filme.get_by_id(filme_id)
         
         # Atualizar apenas os campos fornecidos
         if nome is not None:
@@ -286,18 +268,19 @@ def atualizar_filme(session, filme_id, nome=None, ano=None, nota=None):
         if nota is not None:
             filme.nota = nota
         
-        session.commit()
+        filme.save()  # Salva apenas campos modificados!
         return True
+    except DoesNotExist:
+        return False
     except Exception as e:
-        session.rollback()
         print(f"Erro: {e}")
         return False
 ```
 
-**Vantagem SQLAlchemy:** 
+**Vantagem Peewee:**
 - Trabalha diretamente com o objeto
+- `.save()` atualiza apenas campos modificados (eficiente!)
 - Não precisa reconstruir todo o registro
-- Rollback automático
 - Mais intuitivo
 
 ---
@@ -320,31 +303,25 @@ def deletar_filme(filme_id):
         return False
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
-def deletar_filme(session, filme_id):
+def deletar_filme(filme_id):
     try:
-        filme = session.query(Filme)\
-            .filter(Filme.id == filme_id)\
-            .first()
-        
-        if not filme:
-            return False
-        
-        session.delete(filme)
-        session.commit()
+        filme = Filme.get_by_id(filme_id)
+        filme.delete_instance()
         return True
+    except DoesNotExist:
+        return False
     except Exception as e:
-        session.rollback()
         print(f"Erro: {e}")
         return False
 ```
 
-**Vantagem SQLAlchemy:** 
+**Vantagem Peewee:**
 - Mais seguro (verifica se existe antes)
-- Rollback automático
 - Pode executar lógica antes de deletar
+- Código mais expressivo
 
 ---
 
@@ -365,7 +342,7 @@ def media_notas():
     return round(resultado, 2) if resultado else 0
 
 # Melhor nota
-def melhor_nota():
+def melhor_filme():
     cursor.execute("""
         SELECT nome, nota 
         FROM filmes 
@@ -385,40 +362,40 @@ def filmes_por_ano():
     return cursor.fetchall()
 ```
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ```python
-from sqlalchemy import func
+from peewee import fn
 
 # Contar filmes
-def contar_filmes(session):
-    return session.query(Filme).count()
+def contar_filmes():
+    return Filme.select().count()
 
 # Média de notas
-def media_notas(session):
-    media = session.query(func.avg(Filme.nota)).scalar()
+def media_notas():
+    media = Filme.select(fn.AVG(Filme.nota)).scalar()
     return round(media, 2) if media else 0
 
-# Melhor nota
-def melhor_nota(session):
-    return session.query(Filme)\
-        .order_by(Filme.nota.desc())\
-        .first()
+# Melhor filme
+def melhor_filme():
+    return (Filme.select()
+            .order_by(Filme.nota.desc())
+            .first())
 
 # Filmes por ano
-def filmes_por_ano(session):
-    return session.query(
-        Filme.ano, 
-        func.count(Filme.id)
-    ).group_by(Filme.ano)\
-     .order_by(Filme.ano)\
-     .all()
+def filmes_por_ano():
+    return list(
+        Filme.select(Filme.ano, fn.COUNT(Filme.id).alias('total'))
+        .group_by(Filme.ano)
+        .order_by(Filme.ano)
+    )
 ```
 
-**Vantagem SQLAlchemy:** 
-- Funções agregadas integradas
+**Vantagem Peewee:**
+- Funções agregadas integradas (fn.AVG, fn.COUNT, etc.)
 - Retorna objetos ou valores diretos
 - Mais fácil de combinar com filtros
+- Queries complexas mais legíveis
 
 ---
 
@@ -455,47 +432,44 @@ def buscar_filme_com_diretor(filme_id):
     return cursor.fetchone()
 ```
 
-### SQLAlchemy ORM - Relacionamentos
+### Peewee ORM - Relacionamentos
 
 ```python
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from peewee import ForeignKeyField
 
-class Diretor(Base):
-    __tablename__ = 'diretores'
+class Diretor(Model):
+    id = AutoField(primary_key=True)
+    nome = CharField(null=False)
     
-    id = Column(Integer, primary_key=True)
-    nome = Column(String, nullable=False)
-    
-    # Relacionamento
-    filmes = relationship("Filme", back_populates="diretor")
+    class Meta:
+        database = db
+        table_name = 'diretores'
 
-class Filme(Base):
-    __tablename__ = 'filmes'
+class Filme(Model):
+    id = AutoField(primary_key=True)
+    nome = CharField(null=False)
+    diretor = ForeignKeyField(Diretor, backref='filmes')
     
-    id = Column(Integer, primary_key=True)
-    nome = Column(String, nullable=False)
-    diretor_id = Column(Integer, ForeignKey('diretores.id'))
-    
-    # Relacionamento
-    diretor = relationship("Diretor", back_populates="filmes")
+    class Meta:
+        database = db
+        table_name = 'filmes'
 
 # Usar - super simples!
-filme = session.query(Filme).filter(Filme.id == 1).first()
+filme = Filme.get_by_id(1)
 print(f"Filme: {filme.nome}")
 print(f"Diretor: {filme.diretor.nome}")  # Acesso direto!
 
 # Ou o contrário
-diretor = session.query(Diretor).filter(Diretor.id == 1).first()
+diretor = Diretor.get_by_id(1)
 for filme in diretor.filmes:  # Lista de filmes do diretor
     print(filme.nome)
 ```
 
-**Vantagem SQLAlchemy:** 
+**Vantagem Peewee:**
 - Relacionamentos definidos uma vez
 - Navegação natural entre objetos
-- Lazy/Eager loading configurável
 - JOIN automático quando necessário
+- backref cria relação inversa automaticamente
 
 ---
 
@@ -515,8 +489,9 @@ for filme in diretor.filmes:  # Lista de filmes do diretor
 - Difícil manter com muitas tabelas
 - Propenso a SQL injection se mal usado
 - Código repetitivo
+- Precisa gerenciar commit/rollback manualmente
 
-### SQLAlchemy ORM
+### Peewee ORM
 
 ✅ **Vantagens:**
 - Código orientado a objetos
@@ -524,31 +499,36 @@ for filme in diretor.filmes:  # Lista de filmes do diretor
 - Proteção contra SQL injection
 - Portável entre bancos de dados
 - Relacionamentos simples
-- Migrações facilitadas
 - Código mais limpo e manutenível
+- Menos linhas de código
+- Similar ao Django ORM
+- Não precisa gerenciar sessões
 
 ❌ **Desvantagens:**
 - Curva de aprendizado inicial
 - Overhead de performance (pequeno)
-- Queries complexas podem ser difíceis
+- Queries muito complexas podem ser difíceis
 - Mais dependências
 
 ---
 
 ## 🎯 Quando Usar Cada Um?
 
-### Use SQL Puro quando:
-- Projeto muito simples
-- Performance crítica
-- Query SQL complexa específica
-- Aprendendo SQL
+### Use SQL Puro quando
 
-### Use SQLAlchemy quando:
+- Projeto muito simples (script único)
+- Performance extremamente crítica
+- Query SQL complexa muito específica
+- Aprendendo SQL puro
+
+### Use Peewee quando
+
 - Projeto médio/grande
 - Múltiplas tabelas relacionadas
 - Precisa trocar de banco no futuro
 - Trabalho em equipe
 - Manutenção a longo prazo
+- Preparação para Django
 
 ---
 
@@ -560,7 +540,7 @@ Para o ensino, é importante:
 2. **Migrar para ORM** (módulo 4) para ver as vantagens
 3. **Saber ambos** - o ideal é conhecer os dois e escolher conforme a necessidade
 
-SQLAlchemy não substitui SQL - ele constrói sobre SQL. Entender SQL é fundamental mesmo usando ORM!
+Peewee não substitui SQL - ele constrói sobre SQL. Entender SQL é fundamental mesmo usando ORM!
 
 ---
 

@@ -1,5 +1,5 @@
 import streamlit as st
-from database import get_session, init_db
+from database import init_db
 from crud import (
     criar_filme, 
     listar_filmes, 
@@ -10,7 +10,7 @@ from crud import (
 
 # Configuração da página
 st.set_page_config(
-    page_title="Sistema de Filmes - SQLAlchemy",
+    page_title="Sistema de Filmes - Peewee ORM",
     page_icon="🎬",
     layout="wide",
 )
@@ -19,7 +19,7 @@ st.set_page_config(
 init_db()
 
 # Título principal
-st.title("🎬 Sistema de Filmes - SQLAlchemy ORM")
+st.title("🎬 Sistema de Filmes - Peewee ORM")
 st.markdown("---")
 
 # Criar abas
@@ -35,9 +35,7 @@ with tab1:
     
     if st.button("Adicionar"):
         if nome.strip():
-            session = get_session()
-            filme = criar_filme(session, nome, ano, nota)
-            session.close()
+            filme = criar_filme(nome, ano, nota)
             
             if filme:
                 st.success(f"Filme '{nome}' adicionado com sucesso! (ID: {filme.id})")
@@ -51,9 +49,7 @@ with tab1:
 with tab2:
     st.subheader("Lista de Filmes")
     
-    session = get_session()
-    filmes = listar_filmes(session)
-    session.close()
+    filmes = listar_filmes()
     
     if filmes:
         st.write(f"Total de filmes: {len(filmes)}")
@@ -68,8 +64,7 @@ with tab2:
 with tab3:
     st.subheader("Atualizar Filme")
     
-    session = get_session()
-    filmes = listar_filmes(session)
+    filmes = listar_filmes()
     
     if filmes:
         filmes_dict = {f"{f.id} - {f.nome}": f.id for f in filmes}
@@ -81,7 +76,7 @@ with tab3:
         
         if filme_selecionado:
             filme_id = filmes_dict[filme_selecionado]
-            filme_atual = buscar_filme_por_id(session, filme_id)
+            filme_atual = buscar_filme_por_id(filme_id)
             
             if filme_atual:
                 st.markdown("---")
@@ -96,7 +91,7 @@ with tab3:
                 
                 if st.button("Salvar Alterações"):
                     if novo_nome.strip():
-                        if atualizar_filme(session, filme_id, novo_nome, novo_ano, nova_nota):
+                        if atualizar_filme(filme_id, novo_nome, novo_ano, nova_nota):
                             st.success("Filme atualizado com sucesso!")
                             st.rerun()
                         else:
@@ -105,15 +100,12 @@ with tab3:
                         st.error("O nome do filme não pode estar vazio.")
     else:
         st.info("Nenhum filme cadastrado.")
-    
-    session.close()
 
 # TAB 4: Deletar Filme
 with tab4:
     st.subheader("Deletar Filme")
     
-    session = get_session()
-    filmes = listar_filmes(session)
+    filmes = listar_filmes()
     
     if filmes:
         filmes_dict = {f"{f.id} - {f.nome}": f.id for f in filmes}
@@ -126,7 +118,7 @@ with tab4:
         
         if filme_selecionado:
             filme_id = filmes_dict[filme_selecionado]
-            filme_atual = buscar_filme_por_id(session, filme_id)
+            filme_atual = buscar_filme_por_id(filme_id)
             
             if filme_atual:
                 st.markdown("---")
@@ -134,22 +126,20 @@ with tab4:
                           f"({filme_atual.ano})**")
                 
                 if st.button("Confirmar Exclusão", type="primary"):
-                    if deletar_filme(session, filme_id):
+                    if deletar_filme(filme_id):
                         st.success(f"Filme '{filme_atual.nome}' deletado com sucesso!")
                         st.rerun()
                     else:
                         st.error("Erro ao deletar filme.")
     else:
         st.info("Nenhum filme cadastrado.")
-    
-    session.close()
 
 # Rodapé
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center'>
-        <p>💡 Sistema desenvolvido com SQLAlchemy ORM | 📚 Programação com Banco de Dados</p>
+        <p>💡 Sistema desenvolvido com Peewee ORM | 📚 Programação com Banco de Dados</p>
     </div>
     """,
     unsafe_allow_html=True
